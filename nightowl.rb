@@ -190,13 +190,11 @@ notifier = INotify::Notifier.new
 notifier.watch($options[:file], :modify) {
   inspect_logfile($options[:file])
 }
-Thread.new{ notifier.run }
+notifier_thread = Thread.new{ notifier.run }
 custom_log("✓ Setup logfile listener", :green, log_to_rcon: false)
 
 # Setup player counter
 run_player_checker()
 
 # Loop
-while true
-  sleep 10
-end
+notifier_thread.join

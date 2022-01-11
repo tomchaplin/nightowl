@@ -87,6 +87,8 @@ def run_player_checker()
           custom_log("| Found #{player_count} players", :yellow, log_to_rcon: false)
         end
         if consecutive_empties >= 2
+          # Stop the player checker to prevent more looping
+          cancel_player_checker()
           # Trigger shutdown if empty twice in a row
           shutdown_server()
         else

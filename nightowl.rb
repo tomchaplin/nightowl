@@ -21,7 +21,7 @@ $checker_in_progress = false
 def custom_log(msg, color, log_to_rcon: true)
   puts msg.colorize(color)
   if log_to_rcon 
-    rcon_msg = "🦉 "+msg
+    rcon_msg = "nightowl "+msg
     $client.execute("say "+rcon_msg)
   end
 end

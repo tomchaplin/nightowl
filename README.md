@@ -19,7 +19,7 @@ Usage: nightowl [options]
 ## Config file
 Here is an illustrative example:
 ```
-host: localhost
+host: "localhost"
 port: 25575
 password: "something-nobody-would-ever-guess"
 ```

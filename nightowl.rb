@@ -18,12 +18,27 @@ $shutdown_in_progress = false
 $checker_in_progress = false
 
 ### Custom logger
+def print_help()
+  help_msg = [
+    '? nightowl sleep - Start the shutdown procedure; in 15 seconds the server will stop and 5 minutes later turn off the PC.',
+    '? nightowl cancel - Cancel a shutdown procedure.',
+    '? nightowl pause - Pause polling for inactivity.',
+    '? nightowl resume - Resume polling for inactivity.',
+    '? nightowl help - Print the help message'
+  ]
+  help_msg.each{ |line| say_to_rcon(line) }
+end
+
 def custom_log(msg, color, log_to_rcon: true)
   puts msg.colorize(color)
   if log_to_rcon 
+    say_to_rcon(msg)
+  end
+end
+
+def say_to_rcon(msg)
     rcon_msg = "<nightowl> "+msg
     $client.execute("say "+rcon_msg)
-  end
 end
 
 ### METHODS FOR STARTING/STOPPING SHUTDOWN
@@ -72,36 +87,6 @@ def run_player_checker()
   else
     $checker_in_progress = true
     custom_log("- Starting player count checker", :cyan)
-    Thread.new{
-      consecutive_empties = 0;
-      while $checker_in_progress
-        # Check for players
-        custom_log("- Checking for players", :cyan, log_to_rcon: false)
-        player_count = get_player_count()
-        # Update number of times 0 players detected
-        if player_count == 0
-          consecutive_empties = consecutive_empties + 1
-          custom_log("| No players found #{consecutive_empties} time(s) in a row", :yellow, log_to_rcon: false)
-        else
-          consecutive_empties = 0
-          custom_log("| Found #{player_count} players", :yellow, log_to_rcon: false)
-        end
-        if consecutive_empties >= 2
-          # Stop the player checker to prevent more looping
-          cancel_player_checker()
-          # Trigger shutdown if empty twice in a row
-          shutdown_server()
-        else
-          # Else sleep and wait to check again
-          # We sleep in intervals of 1 so that we can cancel the checker if need be
-          countdown = $options[:time]
-          while countdown > 0 && $checker_in_progress
-            countdown = countdown - 1
-            sleep 1
-          end
-        end
-      end
-    }
   end
 end
 
@@ -132,6 +117,8 @@ def inspect_logfile(logfile)
     run_player_checker()
   elsif newline.include? "nightowl pause"
     cancel_player_checker()
+  elsif newline.include? "nightowl help"
+    print_help()
   end
 end
 
@@ -139,7 +126,7 @@ end
 # Option parsing
 $options = {
   :file => "logs/latest.log",
-  :time => 60*30,
+  :time => 30,
   :config => "nightowl_config.yml"
 }
 OptionParser.new do |opts|
@@ -147,7 +134,7 @@ OptionParser.new do |opts|
     $options[:file] = f
   end
   opts.on('-t', '--time [wait_time]', Integer, "Time (in mins) between player count checks (default 30min)") do |t|
-    $options[:time] = t * 60
+    $options[:time] = t
   end
   opts.on('-c', '--config [config_file]', "YAML file containing RCON config (default nightowl_config.yml)") do |c|
     $options[:config] = c
@@ -194,7 +181,29 @@ notifier_thread = Thread.new{ notifier.run }
 custom_log("✓ Setup logfile listener", :green, log_to_rcon: false)
 
 # Setup player counter
-run_player_checker()
-
-# Loop
-notifier_thread.join
+consecutive_empties = 0;
+loop do
+  sleep 60
+  # Skip check if checker paused
+  if not $checker_in_progress
+    consecutive_empties = 0;
+    next
+  end
+  # Check for players
+  player_count = get_player_count()
+  if player_count == 0
+    consecutive_empties = consecutive_empties + 1
+    custom_log("| No players found #{consecutive_empties} minute(s) in a row", :yellow, log_to_rcon: false)
+  else
+    consecutive_empties = 0
+    custom_log("| Found #{player_count} players", :yellow, log_to_rcon: false)
+  end
+  # Stop server if we've seen 0 many times in a row
+  # We do strict inueqlaity to ensure its been at least $options[:time] minutes
+  if consecutive_empties > $options[:time]
+    # Stop the player checker to prevent more looping
+    cancel_player_checker()
+    # Trigger shutdown if empty twice in a row
+    shutdown_server()
+  end
+end

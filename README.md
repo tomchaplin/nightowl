@@ -32,6 +32,7 @@ There are four commands:
 * `nightowl cancel` - Cancel a shutdown procedure.
 * `nightowl pause` - Pause polling for inactivity.
 * `nightowl resume` - Resume polling for inactivity.
+* `nightowl help` - Print the help message
 
 ## TODO
 

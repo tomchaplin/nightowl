@@ -15,7 +15,7 @@ $options = {}
 $config = {}
 $client = nil
 $shutdown_in_progress = false
-$checker_in_progress = false
+$checker_in_progress = true
 
 ### Custom logger
 def print_help()
@@ -108,6 +108,10 @@ def inspect_logfile(logfile)
   if newline.include? "WEB"
     return
   end
+  # Ignore things said by nightowl (e.g. in help message)
+  if newline.include? "<nightowl>"
+    return
+  end
   # Check for nightowl commands
   if newline.include? "nightowl sleep"
     shutdown_server()
@@ -181,6 +185,7 @@ notifier_thread = Thread.new{ notifier.run }
 custom_log("✓ Setup logfile listener", :green, log_to_rcon: false)
 
 # Setup player counter
+custom_log("- Starting player count checker", :cyan)
 consecutive_empties = 0;
 loop do
   sleep 60
@@ -193,7 +198,7 @@ loop do
   player_count = get_player_count()
   if player_count == 0
     consecutive_empties = consecutive_empties + 1
-    custom_log("| No players found #{consecutive_empties} minute(s) in a row", :yellow, log_to_rcon: false)
+    custom_log("| No players found #{consecutive_empties - 1} minute(s) in a row", :yellow, log_to_rcon: false)
   else
     consecutive_empties = 0
     custom_log("| Found #{player_count} players", :yellow, log_to_rcon: false)

@@ -38,7 +38,5 @@ There are four commands:
 
 * Refactor so that starting/stopping threads has a better API.
 * Refactor so that all options/config can be set through both `YAML` file and command-line options.
-* Refactor `player_checker` thread; it's a mess at the moment.
-* Poll the server for users every minute, to ensure there was consistent inactivity for the entire `[wait_time]`.
 * Make sure that we only respond to chat messages or server messages.
 * Add whitelist to config.
